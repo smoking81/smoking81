@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>Angel-Quiz: Drag & Drop</title>
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      max-width: 1100px;
+    }
+    h2 {
+      margin-bottom: 10px;
+    }
+    .questions button {
+      margin-right: 10px;
+      margin-bottom: 10px;
+      padding: 8px 15px;
+    }
+    .question-title {
+      font-weight: bold;
+      margin: 15px 0;
+    }
+    .category-block {
+      display: flex;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+    .list-box {
+      flex: 1;
+    }
+    h3 {
+      margin-bottom: 5px;
+    }
+    ul {
+      list-style: none;
+      padding: 10px;
+      min-height: 60px;
+      border: 1px solid #ccc;
+      background-color: #f9f9f9;
+    }
+    li {
+      background-color: #e0e0e0;
+      margin: 5px;
+      padding: 8px 12px;
+      border: 1px solid #999;
+      cursor: grab;
+    }
+    button.check {
+      padding: 10px 20px;
+      font-size: 1em;
+      margin-top: 20px;
+    }
+    @media (max-width: 768px) {
+      .category-block {
+        flex-direction: column;
+      }
+      ul {
+        overflow-x: auto;
+      }
+    }
+  </style>
+</head>
+<body>
+<h2>Angel-Quiz: Drag & Drop</h2>
+
+<div class="questions" id="question-buttons"></div>
+<div id="question-title" class="question-title">Bitte wähle eine Frage aus.</div>
+<div id="categories-container"></div>
+<button class="check" onclick="checkOrder()">Überprüfen</button>
+
+<script>
+  const questions = [
+    {
+      title: "Rute 1 - Rotauge & co",
+      sequence: [
+        "Blau Teleskop 5m WG 20gr",
+        "Kleine Rolle 3,6kg",
+        "Kleine Pose ~2gr (Feststellpose)",
+        "Kleine Kugelblei",
+        "Kleiner Wirbel (schwarz)",
+        "Hacken Nr. >= 10",
+        "Made",
+        "Unterfangnetz",
+        "Metermaß",
+        "Schlagholz",
+        "Messer",
+        "Stabhackenlöser",
+        "Löseschere"
+      ],
+      categories: {
+        Rute: ["Blau Teleskop 5m WG 20gr"],
+        Rolle: ["Kleine Rolle 3,6kg"],
+        Montage: [
+          "Kleine Pose ~2gr (Feststellpose)",
+          "Kleine Kugelblei",
+          "Kleiner Wirbel (schwarz)",
+          "Hacken Nr. >= 10"
+        ],
+        Köder: ["Made"],
+        Zubehör: ["Unterfangnetz", "Metermaß", "Schlagholz", "Messer", "Stabhackenlöser", "Löseschere"]
+      }
+    },
+    {
+      title: "Rute 2 - Feederrute Rotauge & co",
+      sequence: [
+        "Feederrute (bunte Spitze)",
+        "Kleine Rolle 3,6kg",
+        "Kleiner Wirbel (schwarz)",
+        "Futterkorb oder Feeder",
+        "Hacken Nr. >= 10",
+        "Made",
+        "Unterfangnetz",
+        "Metermaß",
+        "Schlagholz",
+        "Messer",
+        "Stabhackenlöser",
+        "Löseschere"
+      ],
+      categories: {
+        Rute: ["Feederrute (bunte Spitze)"],
+        Rolle: ["Kleine Rolle 3,6kg"],
+        Montage: ["Kleiner Wirbel (schwarz)", "Futterkorb oder Feeder", "Hacken Nr. >= 10"],
+        Köder: ["Made"],
+        Zubehör: ["Unterfangnetz", "Metermaß", "Schlagholz", "Messer", "Stabhackenlöser", "Löseschere"]
+      }
+    },
+    {
+      title: "Rute 3 - Karpfen",
+      sequence: [
+        "Grüne Teleskoprute \"Cyprio\" 3,6m WG 60gr",
+        "Große Rolle 11,3kg",
+        "Stopper",
+        "Perle",
+        "Große Pose ~7.5 (Laufpose)",
+        "Große Kugelblei",
+        "Perle",
+        "Großer Wirbel (schwarz)",
+        "Hacken Nr. <= 6",
+        "Kartoffeln",
+        "Unterfangnetz",
+        "Metermaß",
+        "Schlagholz",
+        "Messer",
+        "Stabhackenlöser",
+        "Lösezange"
+      ],
+      categories: {
+        Rute: ["Grüne Teleskoprute \"Cyprio\" 3,6m WG 60gr"],
+        Rolle: ["Große Rolle 11,3kg"],
+        Montage: ["Stopper", "Perle", "Große Pose ~7.5 (Laufpose)", "Große Kugelblei", "Perle", "Großer Wirbel (schwarz)", "Hacken Nr. <= 6"],
+        Köder: ["Kartoffeln"],
+        Zubehör: ["Unterfangnetz", "Metermaß", "Schlagholz", "Messer", "Stabhackenlöser", "Lösezange"]
+      }
+    },
+    {
+      title: "Rute 4 - Aal",
+      sequence: [
+        "Blau 2-teilig 2,7m WG 60gr",
+        "Große Rolle 11,3kg",
+        "Sargblei 60gr",
+        "Perle",
+        "Stopper",
+        "Großer Wirbel (schwarz)",
+        "Hacken Nr. <= 6",
+        "Tauwurm",
+        "Unterfangnetz",
+        "Metermaß",
+        "Schlagholz",
+        "Messer",
+        "Stabhackenlöser",
+        "Lösezange"
+      ],
+      categories: {
+        Rute: ["Blau 2-teilig 2,7m WG 60gr"],
+        Rolle: ["Große Rolle 11,3kg"],
+        Montage: ["Sargblei 60gr", "Perle", "Stopper", "Großer Wirbel (schwarz)", "Hacken Nr. <= 6"],
+        Köder: ["Tauwurm"],
+        Zubehör: ["Unterfangnetz", "Metermaß", "Schlagholz", "Messer", "Stabhackenlöser", "Lösezange"]
+      }
+    },
+    {
+      title: "Rute 5 - Hecht",
+      sequence: [
+        "Blau 2-teilig 2,4m WG 40gr",
+        "Grosse Rolle 11,3kg",
+        "Großer Wirbel (schwarz)",
+        "Stahlvorfach 12 Kg",
+        "Großer Blinker",
+        "Unterfangnetz",
+        "Metermaß",
+        "Schlagholz",
+        "Messer",
+        "Rachersperre",
+        "Lösezange"
+      ],
+      categories: {
+        Rute: ["Blau 2-teilig 2,4m WG 40gr"],
+        Rolle: ["Grosse Rolle 11,3kg"],
+        Montage: ["Großer Wirbel (schwarz)", "Stahlvorfach 12 Kg"],
+        Köder: ["Großer Blinker"],
+        Zubehör: ["Unterfangnetz", "Metermaß", "Schlagholz", "Messer", "Rachersperre", "Lösezange"]
+      }
+    },
+    {
+      title: "Rute 6 - Barsch",
+      sequence: [
+        "Blau 2-teilig 2,1m WG 30gr",
+        "Mittlere Rolle 5,4kg",
+        "Mittlerer Wirbel (gold)",
+        "Stahlvorfach 6 Kg",
+        "Kleiner Spinner",
+        "Unterfangnetz",
+        "Metermaß",
+        "Schlagholz",
+        "Messer",
+        "Rachersperre",
+        "Lösezange"
+      ],
+      categories: {
+        Rute: ["Blau 2-teilig 2,1m WG 30gr"],
+        Rolle: ["Mittlere Rolle 5,4kg"],
+        Montage: ["Mittlerer Wirbel (gold)", "Stahlvorfach 6 Kg"],
+        Köder: ["Kleiner Spinner"],
+        Zubehör: ["Unterfangnetz", "Metermaß", "Schlagholz", "Messer", "Rachersperre", "Lösezange"]
+      }
+    },
+    {
+      title: "Rute 7 - Fliegenrute trocken",
+      sequence: [
+        "Fliegenrute (Rollehalterung unter Wurfhand)",
+        "Fliegen Rolle hell (gelb)",
+        "Fliegenvorfach schwimmend hell (weiß)",
+        "Kiste mit Trockenfliegen",
+        "Watkescher",
+        "Metermaß",
+        "Schlagholz",
+        "Messer",
+        "Löseschere"
+      ],
+      categories: {
+        Rute: ["Fliegenrute (Rollehalterung unter Wurfhand)"],
+        Rolle: ["Fliegen Rolle hell (gelb)"],
+        Montage: ["Fliegenvorfach schwimmend hell (weiß)"],
+        Köder: ["Kiste mit Trockenfliegen"],
+        Zubehör: ["Watkescher", "Metermaß", "Schlagholz", "Messer", "Löseschere"]
+      }
+    },
+    {
+      title: "Rute 8 - Fliegenrute nass",
+      sequence: [
+        "Fliegenrute (Rollehalterung unter Wurfhand)",
+        "Fliegen Rolle dunkel (schwarz)",
+        "Fliegenvorfach sinkend dunkel (schwarz)",
+        "Kiste mit Nassfliegen",
+        "Watkescher",
+        "Metermaß",
+        "Schlagholz",
+        "Messer",
+        "Löseschere"
+      ],
+      categories: {
+        Rute: ["Fliegenrute (Rollehalterung unter Wurfhand)"],
+        Rolle: ["Fliegen Rolle dunkel (schwarz)"],
+        Montage: ["Fliegenvorfach sinkend dunkel (schwarz)"],
+        Köder: ["Kiste mit Nassfliegen"],
+        Zubehör: ["Watkescher", "Metermaß", "Schlagholz", "Messer", "Löseschere"]
+      }
+    },
+    {
+      title: "Rute 9 - Dorsch",
+      sequence: [
+        "Blau 2-teilig 2,7m WG 250gr",
+        "Grosse Rolle 19,4kg",
+        "Großer Wirbel (silber)",
+        "Pilker",
+        "Gaff",
+        "Metermaß",
+        "Schlagholz",
+        "Messer",
+        "Lösezange"
+      ],
+      categories: {
+        Rute: ["Blau 2-teilig 2,7m WG 250gr"],
+        Rolle: ["Grosse Rolle 19,4kg"],
+        Montage: ["Großer Wirbel (silber)"],
+        Köder: ["Pilker"],
+        Zubehör: ["Gaff", "Metermaß", "Schlagholz", "Messer", "Lösezange"]
+      }
+    },
+    {
+      title: "Rute 10 - Brandungsrute",
+      sequence: [
+        "Blau 3-teilig >=3,5m WG >100gr",
+        "Grosse Rolle mit Schlagschnur 14 Kg",
+        "Großer Wirbel (silber)",
+        "Brandungsvorfach",
+        "Sehr schwere Blei",
+        "Wattwurm",
+        "Metermaß",
+        "Schlagholz",
+        "Messer",
+        "Lösezange"
+      ],
+      categories: {
+        Rute: ["Blau 3-teilig >=3,5m WG >100gr"],
+        Rolle: ["Grosse Rolle mit Schlagschnur 14 Kg"],
+        Montage: ["Großer Wirbel (silber)", "Brandungsvorfach", "Sehr schwere Blei"],
+        Köder: ["Wattwurm"],
+        Zubehör: ["Metermaß", "Schlagholz", "Messer", "Lösezange"]
+      }
+    }
+  ];;
+
+  const allCategories = ["Rute", "Rolle", "Montage", "Köder", "Zubehör"];
+  let currentQuestion = null;
+  const answeredCorrectly = new Set();
+
+  function shuffle(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [array[i], array[j]] = [array[j], array[i]];
+    }
+  }
+
+  function getUnionPerCategory() {
+    const union = {};
+    allCategories.forEach(cat => union[cat] = new Set());
+    questions.forEach(q => {
+      for (const cat of allCategories) {
+        (q.categories[cat] || []).forEach(item => union[cat].add(item));
+      }
+    });
+    const result = {};
+    for (const cat of allCategories) {
+      result[cat] = Array.from(union[cat]);
+      result[cat].sort((a, b) => a.localeCompare(b));
+    }
+    return result;
+  }
+
+  function loadQuestionButtons() {
+    const container = document.getElementById("question-buttons");
+    questions.forEach((q, i) => {
+      const btn = document.createElement("button");
+      btn.textContent = q.title;
+      btn.onclick = () => loadQuestion(i);
+      btn.id = `question-btn-${i}`;
+      if (answeredCorrectly.has(i)) btn.style.backgroundColor = 'lightgreen';
+      container.appendChild(btn);
+    });
+  }
+
+  function loadQuestion(index) {
+    currentQuestion = questions[index];
+    document.getElementById("question-title").textContent = `Frage: ${currentQuestion.title}`;
+    const container = document.getElementById("categories-container");
+    container.innerHTML = "";
+
+    const allChoices = getUnionPerCategory();
+
+    for (const cat of allCategories) {
+      const block = document.createElement("div");
+      block.className = "category-block";
+
+      const sourceBox = document.createElement("div");
+      sourceBox.className = "list-box";
+      const sourceTitle = document.createElement("h3");
+      sourceTitle.textContent = `${cat} Auswahl`;
+      const sourceList = document.createElement("ul");
+      sourceList.id = `source-${cat}`;
+      allChoices[cat].forEach(item => {
+        const li = document.createElement("li");
+        li.textContent = item;
+        sourceList.appendChild(li);
+      });
+      sourceBox.appendChild(sourceTitle);
+      sourceBox.appendChild(sourceList);
+      block.appendChild(sourceBox);
+
+      const targetBox = document.createElement("div");
+      targetBox.className = "list-box";
+      const targetTitle = document.createElement("h3");
+      targetTitle.textContent = `${cat} Antwort`;
+      const targetList = document.createElement("ul");
+      targetList.id = `answer-${cat}`;
+      targetBox.appendChild(targetTitle);
+      targetBox.appendChild(targetList);
+      block.appendChild(targetBox);
+
+      container.appendChild(block);
+
+      new Sortable(sourceList, {
+        group: { name: `group-${cat}`, pull: true, put: true },
+        animation: 150,
+        sort: false
+      });
+      new Sortable(targetList, {
+        group: { name: `group-${cat}`, pull: true, put: true },
+        animation: 150
+      });
+    }
+  }
+
+  function checkOrder() {
+    if (!currentQuestion) {
+      alert("Bitte wähle zuerst eine Frage!");
+      return;
+    }
+
+    const userSequence = [];
+    for (const cat of allCategories) {
+      const list = document.querySelectorAll(`#answer-${cat} li`);
+      list.forEach(li => userSequence.push(li.textContent.trim()));
+    }
+
+    const correct = currentQuestion.sequence;
+
+    if (arraysEqual(userSequence, correct)) {
+      const index = questions.indexOf(currentQuestion);
+      if (index !== -1) answeredCorrectly.add(index);
+      const btn = document.getElementById(`question-btn-${index}`);
+      if (btn) btn.style.backgroundColor = 'lightgreen';
+      alert("Bravo! Du hast die richtige Reihenfolge gefunden!");
+    } else {
+      alert("Leider falsch! Die richtige Reihenfolge war:\n\n" + correct.join("\n"));
+    }
+
+    setTimeout(() => {
+      document.getElementById("question-title").textContent = "Bitte wähle eine Frage aus.";
+      document.getElementById("categories-container").innerHTML = "";
+      currentQuestion = null;
+    }, 1000);
+  }
+
+  function arraysEqual(a, b) {
+    return a.length === b.length && a.every((v, i) => v === b[i]);
+  }
+
+  window.onload = loadQuestionButtons;
+</script>
+</body>
+</html>
