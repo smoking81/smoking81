@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Angelschein - Rutenbau Trainer</title>
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+  <style>
+    :root {
+      --border: #c9ced6;
+      --bg: #f7f8fa;
+      --card: #ffffff;
+      --item: #eef2f7;
+      --item-border: #aeb7c4;
+      --accent: #1f6feb;
+      --ok: #198754;
+      --warn: #b54708;
+      --bad: #b42318;
+      --muted: #667085;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px auto;
+      padding: 0 16px 40px;
+      max-width: 1150px;
+      color: #1f2937;
+      background: #fff;
+    }
+
+    h2 { margin-bottom: 8px; }
+
+    .intro {
+      margin: 0 0 16px;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--bg);
+      margin-bottom: 16px;
+    }
+
+    select, button {
+      font: inherit;
+    }
+
+    select {
+      min-width: min(100%, 340px);
+      padding: 9px 10px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: #fff;
+    }
+
+    button {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 12px;
+      background: #fff;
+      cursor: pointer;
+    }
+
+    button:hover { border-color: var(--accent); }
+    button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+    button.secondary { background: #fff; }
+    button:disabled { opacity: .55; cursor: not-allowed; }
+
+    .question-buttons {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 8px;
+      margin: 12px 0 18px;
+    }
+
+    .question-buttons button {
+      text-align: left;
+      min-height: 42px;
+    }
+
+    .question-buttons button.done {
+      background: #e8f5ee;
+      border-color: #8bd0a6;
+      color: #075e32;
+    }
+
+    .question-buttons button.active {
+      outline: 3px solid rgba(31, 111, 235, .18);
+      border-color: var(--accent);
+    }
+
+    .status-panel {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+
+    .question-title {
+      font-weight: 700;
+      font-size: 1.1rem;
+    }
+
+    .progress-wrap {
+      min-width: 220px;
+      text-align: right;
+    }
+
+    .progress-text {
+      font-size: .95rem;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+
+    .progress-bar {
+      height: 9px;
+      background: #e5e7eb;
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .progress-bar > div {
+      height: 100%;
+      width: 0%;
+      background: var(--accent);
+      transition: width .2s ease;
+    }
+
+    .feedback {
+      display: none;
+      padding: 12px 14px;
+      border-radius: 10px;
+      margin: 0 0 16px;
+      line-height: 1.45;
+    }
+
+    .feedback.info { display: block; background: #eff6ff; border: 1px solid #bfdbfe; }
+    .feedback.ok { display: block; background: #ecfdf3; border: 1px solid #abefc6; color: #05603a; }
+    .feedback.warn { display: block; background: #fffaeb; border: 1px solid #fedf89; color: #7a2e0e; }
+    .feedback.bad { display: block; background: #fef3f2; border: 1px solid #fecdca; color: #7a271a; }
+
+    .category-block {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+      margin-bottom: 18px;
+      padding: 14px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--card);
+    }
+
+    .list-box h3 {
+      margin: 0 0 6px;
+      font-size: 1rem;
+    }
+
+    .hint {
+      margin: 0 0 8px;
+      color: var(--muted);
+      font-size: .9rem;
+    }
+
+    ul.sort-list {
+      list-style: none;
+      padding: 10px;
+      min-height: 74px;
+      border: 1px dashed var(--border);
+      border-radius: 10px;
+      background-color: var(--bg);
+    }
+
+    ul.sort-list:empty::before {
+      content: attr(data-empty);
+      display: block;
+      color: var(--muted);
+      padding: 10px;
+      text-align: center;
+    }
+
+    li.item {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      justify-content: space-between;
+      background-color: var(--item);
+      margin: 6px 0;
+      padding: 8px 10px;
+      border: 1px solid var(--item-border);
+      border-radius: 8px;
+      cursor: grab;
+    }
+
+    li.item:active { cursor: grabbing; }
+
+    .item-label { flex: 1; }
+
+    .item-actions {
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .item-actions button {
+      padding: 4px 7px;
+      font-size: .85rem;
+      border-radius: 6px;
+    }
+
+    .answer-list li.item { background: #fff; }
+
+    .category-summary {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: .9rem;
+    }
+
+    .actions {
+      position: sticky;
+      bottom: 0;
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+      padding: 12px 0;
+      background: rgba(255,255,255,.94);
+      border-top: 1px solid #eee;
+      margin-top: 12px;
+    }
+
+    @media (max-width: 768px) {
+      body { margin-top: 12px; padding: 0 10px 32px; }
+      .status-panel { grid-template-columns: 1fr; }
+      .progress-wrap { text-align: left; }
+      .category-block { grid-template-columns: 1fr; }
+      .actions { justify-content: stretch; }
+      .actions button { flex: 1; }
+      li.item { align-items: flex-start; }
+      .item-actions { max-width: 42%; }
+    }
+  </style>
+</head>
+<body>
+  <h2>Angelschein - Rutenbau Trainer</h2>
+  <p class="intro">
+    Wähle eine Rute, ziehe oder tippe die passenden Teile von links nach rechts und bringe sie innerhalb jeder Kategorie in die richtige Reihenfolge.
+    Die Gesamtprüfung erfolgt in der Reihenfolge: Rute, Rolle, Montage, Köder, Zubehör.
+  </p>
+
+  <div class="toolbar">
+    <label for="question-select"><strong>Frage:</strong></label>
+    <select id="question-select" aria-label="Frage auswählen"></select>
+    <button class="secondary" id="load-selected">Laden</button>
+  </div>
+
+  <div class="question-buttons" id="question-buttons" aria-label="Fragen"></div>
+
+  <div class="status-panel">
+    <div id="question-title" class="question-title">Bitte wähle eine Frage aus.</div>
+    <div class="progress-wrap" aria-live="polite">
+      <div id="progress-text" class="progress-text">0 / 0 ausgewählt</div>
+      <div class="progress-bar" aria-hidden="true"><div id="progress-fill"></div></div>
+    </div>
+  </div>
+
+  <div id="feedback" class="feedback" aria-live="polite"></div>
+  <div id="categories-container"></div>
+
+  <div class="actions">
+    <button id="reset-btn" class="secondary" disabled>Zurücksetzen</button>
+    <button id="check-btn" class="primary" disabled>Überprüfen</button>
+  </div>
+
+<script>
+  const questions = [
+    {
+      title: "A 1 Stellen Sie eine beringte leichte Angelrute zum Fang von Rotaugen, Rotfedern und Brassen
+und das weitere notwendige Zubehör waidgerecht zusammen",
+      sequence: [
+        "Blau Teleskop 5m WG 20gr",
+        "Kleine Rolle 3,6kg",
+        "Kleine Pose ~2gr (Feststellpose)",
+        "Kleine Kugelblei",
+        "Kleiner Wirbel (schwarz)",
+        "Haken Nr. >= 10",
+        "Made",
+        "Unterfangnetz",
+        "Metermaß",
+        "Schlagholz",
+        "Messer",
+        "Stabhackenlöser",
+        "Löseschere"
+      ],
+      categories: {
+        Rute: ["Blau Teleskop 5m WG 20gr"],
+        Rolle: ["Kleine Rolle 3,6kg"],
+        Montage: [
+          "Kleine Pose ~2gr (Feststellpose)",
+          "Kleine Kugelblei",
+          "Kleiner Wirbel (schwarz)",
+          "Haken Nr. >= 10"
+        ],
+        Köder: ["Made"],
+        Zubehör: ["Unterfangnetz", "Metermaß", "Schlagholz", "Messer", "Stabhackenlöser", "Löseschere"]
+      }
+    },
+    {
+      title: "A 2 Stellen Sie eine Schwingspitzenrute zum Fang von Rotaugen, Rotfedern und Brassen und
+das weitere notwendige Zubehör waidgerecht zusammen",
+      sequence: [
+        "Feederrute (bunte Spitze)",
+        "Kleine Rolle 3,6kg",
+        "Kleiner Wirbel (schwarz)",
+        "Futterkorb oder Feeder",
+        "Haken Nr. >= 10",
+        "Made",
+        "Unterfangnetz",
+        "Metermaß",
+        "Schlagholz",
+        "Messer",
+        "Stabhackenlöser",
+        "Löseschere"
+      ],
+      categories: {
+        Rute: ["Feederrute (bunte Spitze)"],
+        Rolle: ["Kleine Rolle 3,6kg"],
+        Montage: ["Kleiner Wirbel (schwarz)", "Futterkorb oder Feeder", "Haken Nr. >= 10"],
+        Köder: ["Made"],
+        Zubehör: ["Unterfangnetz", "Metermaß", "Schlagholz", "Messer", "Stabhackenlöser", "Löseschere"]
+      }
+    },
+    {
+      title: "A 3 Stellen Sie eine Angelrute zum Fang von Karpfen und das weitere notwendige Zubehör
+waidgerecht zusammen",
+      sequence: [
+        "Grüne Teleskoprute \"Cyprio\" 3,6m WG 60gr",
+        "Große Rolle 11,3kg",
+        "Stopper",
+        "Perle-1",
+        "Große Pose ~7.5gr (Laufpose)",
+        "Große Kugelblei",
+        "Perle-2",
+        "Großer Wirbel (schwarz)",
+        "Haken Nr. <= 6",
+        "Kartoffeln",
+        "Unterfangnetz",
+        "Metermaß",
+        "Schlagholz",
+        "Messer",
+        "Stabhackenlöser",
+        "Lösezange"
+      ],
+      categories: {
+        Rute: ["Grüne Teleskoprute \"Cyprio\" 3,6m WG 60gr"],
+        Rolle: ["Große Rolle 11,3kg"],
+        Montage: ["Stopper", "Perle-1", "Große Pose ~7.5gr (Laufpose)", "Große Kugelblei", "Perle-2", "Großer Wirbel (schwarz)", "Haken Nr. <= 6"],
+        Köder: ["Kartoffeln"],
+        Zubehör: ["Unterfangnetz", "Metermaß", "Schlagholz", "Messer", "Stabhackenlöser", "Lösezange"]
+      }
+    },
+    {
+      title: "A 4 Stellen Sie eine Grundrute zum Fang von Aalen und das weitere notwendige Zubehör waidgerecht zusammen.",
+      sequence: [
+        "Blau 2-teilig 2,7m WG 60gr",
+        "Große Rolle 11,3kg",
+        "Sargblei 60gr",
+        "Perle-1",
+        "Stopper",
+        "Großer Wirbel (schwarz)",
+        "Haken Nr. <= 6",
+        "Tauwurm",
+        "Unterfangnetz",
+        "Metermaß",
+        "Schlagholz",
+        "Messer",
+        "Stabhackenlöser",
+        "Lösezange"
+      ],
+      categories: {
+        Rute: ["Blau 2-teilig 2,7m WG 60gr"],
+        Rolle: ["Große Rolle 11,3kg"],
+        Montage: ["Sargblei 60gr", "Perle-1", "Stopper", "Großer Wirbel (schwarz)", "Haken Nr. <= 6"],
+        Köder: ["Tauwurm"],
+        Zubehör: ["Unterfangnetz", "Metermaß", "Schlagholz", "Messer", "Stabhackenlöser", "Lösezange"]
+      }
+    },
+    {
+      title: "A 5 Stellen Sie eine Spinnrute zum Fang von Hechten und das weitere notwendige Zubehör
+waidgerecht zusammen",
+      sequence: [
+        "Blau 2-teilig 2,4m WG 40gr",
+        "Große Rolle 11,3kg",
+        "Großer Wirbel (schwarz)",
+        "Stahlvorfach 12 Kg",
+        "Großer Blinker",
+        "Unterfangnetz",
+        "Metermaß",
+        "Schlagholz",
+        "Messer",
+        "Rachensperre",
+        "Lösezange"
+      ],
+      categories: {
+        Rute: ["Blau 2-teilig 2,4m WG 40gr"],
+        Rolle: ["Große Rolle 11,3kg"],
+        Montage: ["Großer Wirbel (schwarz)", "Stahlvorfach 12 Kg"],
+        Köder: ["Großer Blinker"],
+        Zubehör: ["Unterfangnetz", "Metermaß", "Schlagholz", "Messer", "Rachensperre", "Lösezange"]
+      }
+    },
+    {
+      title: "A 6 Stellen Sie eine Spinnrute zum Fang von Barschen und das weitere notwendige Zubehör
+waidgerecht zusammen",
+      sequence: [
+        "Blau 2-teilig 2,1m WG 30gr",
+        "Mittlere Rolle 5,4kg",
+        "Mittlerer Wirbel (gold)",
+        "Stahlvorfach 6 Kg",
+        "Kleiner Spinner",
+        "Unterfangnetz",
+        "Metermaß",
+        "Schlagholz",
+        "Messer",
+        "Rachensperre",
+        "Lösezange"
+      ],
+      categories: {
+        Rute: ["Blau 2-teilig 2,1m WG 30gr"],
+        Rolle: ["Mittlere Rolle 5,4kg"],
+        Montage: ["Mittlerer Wirbel (gold)", "Stahlvorfach 6 Kg"],
+        Köder: ["Kleiner Spinner"],
+        Zubehör: ["Unterfangnetz", "Metermaß", "Schlagholz", "Messer", "Rachensperre", "Lösezange"]
+      }
+    },
+    {
+      title: "A 7 Stellen Sie eine Fliegenrute zum Fang von Forellen (Trockenfischen) und das weitere notwendige Zubehör waidgerecht zusammen",
+      sequence: [
+        "Fliegenrute (Rollehalterung unter Wurfhand)",
+        "Fliegen Rolle hell (gelb)",
+        "Fliegenvorfach schwimmend hell (weiß)",
+        "Kiste mit Trockenfliegen",
+        "Watkescher",
+        "Metermaß",
+        "Schlagholz",
+        "Messer",
+        "Löseschere"
+      ],
+      categories: {
+        Rute: ["Fliegenrute (Rollehalterung unter Wurfhand)"],
+        Rolle: ["Fliegen Rolle hell (gelb)"],
+        Montage: ["Fliegenvorfach schwimmend hell (weiß)"],
+        Köder: ["Kiste mit Trockenfliegen"],
+        Zubehör: ["Watkescher", "Metermaß", "Schlagholz", "Messer", "Löseschere"]
+      }
+    },
+    {
+      title: "A 8 Stellen Sie eine Fliegenrute zum Fang von Forellen (Naßfischen) und das weitere notwendige Zubehör waidgerecht zusammen",
+      sequence: [
+        "Fliegenrute (Rollehalterung unter Wurfhand)",
+        "Fliegen Rolle dunkel (schwarz)",
+        "Fliegenvorfach sinkend dunkel (schwarz)",
+        "Kiste mit Nassfliegen",
+        "Watkescher",
+        "Metermaß",
+        "Schlagholz",
+        "Messer",
+        "Löseschere"
+      ],
+      categories: {
+        Rute: ["Fliegenrute (Rollehalterung unter Wurfhand)"],
+        Rolle: ["Fliegen Rolle dunkel (schwarz)"],
+        Montage: ["Fliegenvorfach sinkend dunkel (schwarz)"],
+        Köder: ["Kiste mit Nassfliegen"],
+        Zubehör: ["Watkescher", "Metermaß", "Schlagholz", "Messer", "Löseschere"]
+      }
+    },
+    {
+      title: "A 9 Stellen Sie eine Angelrute zum Fang von Dorschen und das weitere notwendige Zubehör
+waidgerecht zusammen",
+      sequence: [
+        "Blau 2-teilig 2,7m WG 250gr",
+        "Große Rolle 19,4kg",
+        "Großer Wirbel (silber)",
+        "Pilker",
+        "Gaff",
+        "Metermaß",
+        "Schlagholz",
+        "Messer",
+        "Lösezange"
+      ],
+      categories: {
+        Rute: ["Blau 2-teilig 2,7m WG 250gr"],
+        Rolle: ["Große Rolle 19,4kg"],
+        Montage: ["Großer Wirbel (silber)"],
+        Köder: ["Pilker"],
+        Zubehör: ["Gaff", "Metermaß", "Schlagholz", "Messer", "Lösezange"]
+      }
+    },
+    {
+      title: "A 10 Stellen Sie eine Brandungsrute zum Fang von Plattfischen und das weitere notwendige
+Zubehör waidgerecht zusammen",
+      sequence: [
+        "Blau 3-teilig >=3,5m WG >100gr",
+        "Große Rolle mit Schlagschnur 14 Kg",
+        "Großer Wirbel (silber)",
+        "Brandungsvorfach",
+        "Sehr schweres Blei",
+        "Wattwurm",
+        "Metermaß",
+        "Schlagholz",
+        "Messer",
+        "Lösezange"
+      ],
+      categories: {
+        Rute: ["Blau 3-teilig >=3,5m WG >100gr"],
+        Rolle: ["Große Rolle mit Schlagschnur 14 Kg"],
+        Montage: ["Großer Wirbel (silber)", "Brandungsvorfach", "Sehr schweres Blei"],
+        Köder: ["Wattwurm"],
+        Zubehör: ["Metermaß", "Schlagholz", "Messer", "Lösezange"]
+      }
+    }
+  ];
+
+  const allCategories = ["Rute", "Rolle", "Montage", "Köder", "Zubehör"];
+  let currentQuestion = null;
+  let currentQuestionIndex = -1;
+  const answeredCorrectly = new Set();
+
+  const el = id => document.getElementById(id);
+
+  function getUnionPerCategory() {
+    const union = {};
+    allCategories.forEach(cat => union[cat] = new Set());
+    questions.forEach(q => {
+      for (const cat of allCategories) {
+        (q.categories[cat] || []).forEach(item => union[cat].add(item));
+      }
+    });
+    const result = {};
+    for (const cat of allCategories) {
+      result[cat] = Array.from(union[cat]).sort((a, b) => a.localeCompare(b));
+    }
+    return result;
+  }
+
+  function initNavigation() {
+    const select = el("question-select");
+    select.innerHTML = "";
+    questions.forEach((q, i) => {
+      const opt = document.createElement("option");
+      opt.value = i;
+      opt.textContent = q.title;
+      select.appendChild(opt);
+    });
+    el("load-selected").addEventListener("click", () => loadQuestion(Number(select.value)));
+
+    const buttons = el("question-buttons");
+    buttons.innerHTML = "";
+    questions.forEach((q, i) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.textContent = q.title;
+      btn.id = `question-btn-${i}`;
+      btn.addEventListener("click", () => loadQuestion(i));
+      buttons.appendChild(btn);
+    });
+  }
+
+  function loadQuestion(index) {
+    currentQuestion = questions[index];
+    currentQuestionIndex = index;
+    el("question-select").value = index;
+    el("question-title").textContent = `Frage: ${currentQuestion.title}`;
+    clearFeedback();
+
+    document.querySelectorAll(".question-buttons button").forEach(btn => btn.classList.remove("active"));
+    const activeBtn = el(`question-btn-${index}`);
+    if (activeBtn) activeBtn.classList.add("active");
+
+    const container = el("categories-container");
+    container.innerHTML = "";
+    const allChoices = getUnionPerCategory();
+
+    for (const cat of allCategories) {
+      const block = document.createElement("section");
+      block.className = "category-block";
+      block.dataset.category = cat;
+
+      const sourceBox = createBox(`${cat} Auswahl`, "Tippen oder ziehen", `source-${cat}`, "Verfügbare Elemente", "source-list");
+      allChoices[cat].forEach(item => sourceBox.list.appendChild(createItem(item, "source")));
+
+      const targetBox = createBox(`${cat} Antwort`, "Reihenfolge per Drag & Drop oder ↑/↓ ändern", `answer-${cat}`, "Hierher ziehen oder links auf + tippen", "answer-list");
+      const summary = document.createElement("div");
+      summary.className = "category-summary";
+      summary.id = `summary-${cat}`;
+      targetBox.wrapper.appendChild(summary);
+
+      block.appendChild(sourceBox.wrapper);
+      block.appendChild(targetBox.wrapper);
+      container.appendChild(block);
+
+      new Sortable(sourceBox.list, {
+        group: { name: `group-${cat}`, pull: true, put: true },
+        animation: 150,
+        sort: false,
+        onAdd: evt => { setItemMode(evt.item, "source"); updateProgress(); clearFeedback(); }
+      });
+      new Sortable(targetBox.list, {
+        group: { name: `group-${cat}`, pull: true, put: true },
+        animation: 150,
+        onAdd: evt => { setItemMode(evt.item, "answer"); updateProgress(); clearFeedback(); },
+        onUpdate: () => { updateProgress(); clearFeedback(); }
+      });
+    }
+
+    el("check-btn").disabled = false;
+    el("reset-btn").disabled = false;
+    updateProgress();
+  }
+
+  function createBox(title, hint, id, emptyText, extraClass) {
+    const wrapper = document.createElement("div");
+    wrapper.className = "list-box";
+    const h = document.createElement("h3");
+    h.textContent = title;
+    const p = document.createElement("p");
+    p.className = "hint";
+    p.textContent = hint;
+    const list = document.createElement("ul");
+    list.className = `sort-list ${extraClass}`;
+    list.id = id;
+    list.dataset.empty = emptyText;
+    wrapper.append(h, p, list);
+    return { wrapper, list };
+  }
+
+  function createItem(text, mode) {
+    const li = document.createElement("li");
+    li.className = "item";
+    li.dataset.item = text;
+    li.innerHTML = `<span class="item-label"></span><span class="item-actions"></span>`;
+    li.querySelector(".item-label").textContent = text;
+    setItemMode(li, mode);
+    return li;
+  }
+
+  function setItemMode(li, mode) {
+    const actions = li.querySelector(".item-actions");
+    actions.innerHTML = "";
+    if (mode === "source") {
+      const add = smallButton("+", "Hinzufügen", () => moveToAnswer(li));
+      actions.appendChild(add);
+    } else {
+      actions.appendChild(smallButton("↑", "Nach oben", () => moveItem(li, -1)));
+      actions.appendChild(smallButton("↓", "Nach unten", () => moveItem(li, 1)));
+      actions.appendChild(smallButton("×", "Entfernen", () => moveToSource(li)));
+    }
+  }
+
+  function smallButton(text, title, handler) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.textContent = text;
+    btn.title = title;
+    btn.setAttribute("aria-label", title);
+    btn.addEventListener("click", e => { e.stopPropagation(); handler(); });
+    return btn;
+  }
+
+  function categoryOfItem(li) {
+    return li.closest(".category-block").dataset.category;
+  }
+
+  function moveToAnswer(li) {
+    const cat = categoryOfItem(li);
+    setItemMode(li, "answer");
+    el(`answer-${cat}`).appendChild(li);
+    updateProgress();
+    clearFeedback();
+  }
+
+  function moveToSource(li) {
+    const cat = categoryOfItem(li);
+    setItemMode(li, "source");
+    const source = el(`source-${cat}`);
+    source.appendChild(li);
+    sortSourceList(source);
+    updateProgress();
+    clearFeedback();
+  }
+
+  function moveItem(li, direction) {
+    const sibling = direction < 0 ? li.previousElementSibling : li.nextElementSibling;
+    if (!sibling) return;
+    if (direction < 0) li.parentNode.insertBefore(li, sibling);
+    else li.parentNode.insertBefore(sibling, li);
+    updateProgress();
+    clearFeedback();
+  }
+
+  function sortSourceList(list) {
+    Array.from(list.children)
+      .sort((a, b) => a.dataset.item.localeCompare(b.dataset.item))
+      .forEach(child => list.appendChild(child));
+  }
+
+  function getUserSequence() {
+    const sequence = [];
+    for (const cat of allCategories) {
+      document.querySelectorAll(`#answer-${cat} li`).forEach(li => sequence.push(li.dataset.item.trim()));
+    }
+    return sequence;
+  }
+
+  function getCategorySequence(cat) {
+    return Array.from(document.querySelectorAll(`#answer-${cat} li`)).map(li => li.dataset.item.trim());
+  }
+
+  function getCorrectCategorySequence(cat) {
+    return currentQuestion.sequence.filter(item => (currentQuestion.categories[cat] || []).includes(item));
+  }
+
+  function updateProgress() {
+    if (!currentQuestion) {
+      el("progress-text").textContent = "0 / 0 ausgewählt";
+      el("progress-fill").style.width = "0%";
+      return;
+    }
+    const selected = getUserSequence().length;
+    const total = currentQuestion.sequence.length;
+    const percent = total ? Math.round(selected / total * 100) : 0;
+    el("progress-text").textContent = `${selected} / ${total} ausgewählt`;
+    el("progress-fill").style.width = `${percent}%`;
+
+    for (const cat of allCategories) {
+      const selectedCat = getCategorySequence(cat).length;
+      const totalCat = getCorrectCategorySequence(cat).length;
+      el(`summary-${cat}`).textContent = `${selectedCat} / ${totalCat} ausgewählt`;
+    }
+  }
+
+  function checkOrder() {
+    if (!currentQuestion) {
+      showFeedback("bad", "Bitte wähle zuerst eine Frage aus.");
+      return;
+    }
+
+    const userSequence = getUserSequence();
+    const correct = currentQuestion.sequence;
+
+    if (arraysEqual(userSequence, correct)) {
+      answeredCorrectly.add(currentQuestionIndex);
+      const btn = el(`question-btn-${currentQuestionIndex}`);
+      if (btn) btn.classList.add("done");
+      showFeedback("ok", "Bravo! Alles korrekt. Diese Frage ist als erledigt markiert.");
+      return;
+    }
+
+    const selected = userSequence.length;
+    const missingCount = Math.max(0, correct.length - selected);
+    const extraCount = Math.max(0, selected - correct.length);
+    const wrongPositions = userSequence.reduce((count, item, i) => count + (item !== correct[i] ? 1 : 0), 0);
+    const categoryHints = buildCategoryHints();
+
+    let message = "Noch nicht korrekt. ";
+    if (missingCount) message += `Es fehlen noch ${missingCount} Element(e). `;
+    if (extraCount) message += `Es sind ${extraCount} Element(e) zu viel. `;
+    if (!missingCount && !extraCount) message += `${wrongPositions} Position(en) stimmen noch nicht. `;
+    if (categoryHints.length) message += "Hinweis: " + categoryHints.slice(0, 2).join(" ");
+    showFeedback("warn", message);
+  }
+
+  function buildCategoryHints() {
+    const hints = [];
+    for (const cat of allCategories) {
+      const user = getCategorySequence(cat);
+      const correct = getCorrectCategorySequence(cat);
+      if (arraysEqual(user, correct)) continue;
+      if (user.length < correct.length) hints.push(`${cat}: ${correct.length - user.length} Element(e) fehlen.`);
+      else if (user.length > correct.length) hints.push(`${cat}: ${user.length - correct.length} Element(e) zu viel.`);
+      else hints.push(`${cat}: Reihenfolge prüfen.`);
+    }
+    return hints;
+  }
+
+  function resetCurrentQuestion() {
+    if (currentQuestionIndex >= 0) loadQuestion(currentQuestionIndex);
+  }
+
+  function showFeedback(type, text) {
+    const box = el("feedback");
+    box.className = `feedback ${type}`;
+    box.textContent = text;
+  }
+
+  function clearFeedback() {
+    const box = el("feedback");
+    box.className = "feedback";
+    box.textContent = "";
+  }
+
+  function arraysEqual(a, b) {
+    return a.length === b.length && a.every((v, i) => v === b[i]);
+  }
+
+  el("check-btn").addEventListener("click", checkOrder);
+  el("reset-btn").addEventListener("click", resetCurrentQuestion);
+  window.addEventListener("load", initNavigation);
+</script>
+</body>
+</html>
